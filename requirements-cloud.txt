@@ -1,0 +1,16 @@
+# Storibot Lead Research Agent - Cloud Deployment Requirements
+# Simplified for Replit, PythonAnywhere, Render, Heroku
+
+# Core AI
+anthropic==0.25.0
+
+# Web Framework
+fastapi==0.110.0
+uvicorn==0.29.0
+
+# Data Handling
+pydantic==2.6.4
+python-dotenv==1.0.1
+
+# That's it! Just 5 packages for cloud deployment
+# No Docker, databases, or complex dependencies needed
