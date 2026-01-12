@@ -71,7 +71,7 @@ def generate_video_shot(shot_number: int, prompt: str) -> Path:
     print(f"Prompt: {prompt[:100]}...")
 
     # Runway Gen-3 Alpha API endpoint
-    url = "https://api.runwayml.com/v1/text-to-video"
+    url = "https://api.dev.runwayml.com/v1/text_to_video"
 
     headers = {
         "Authorization": f"Bearer {RUNWAY_API_KEY}",
@@ -81,7 +81,7 @@ def generate_video_shot(shot_number: int, prompt: str) -> Path:
 
     payload = {
         "model": "gen3a_turbo",
-        "promptText": prompt,
+        "prompt_text": prompt,
         "duration": 5,
         "ratio": "16:9"
     }
@@ -104,7 +104,7 @@ def generate_video_shot(shot_number: int, prompt: str) -> Path:
     print(f"Task started: {task_id}")
 
     # Poll for completion
-    poll_url = f"https://api.runwayml.com/v1/tasks/{task_id}"
+    poll_url = f"https://api.dev.runwayml.com/v1/tasks/{task_id}"
 
     max_attempts = 120  # 10 minutes max (video gen can take a while)
     for attempt in range(max_attempts):
