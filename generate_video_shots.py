@@ -80,7 +80,7 @@ def generate_video_shot(shot_number: int, prompt: str) -> Path:
     }
 
     payload = {
-        "model": "gen3a_turbo",
+        "model": "gen4.5",
         "promptText": prompt,
         "duration": 5,
         "ratio": "16:9"
