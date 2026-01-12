@@ -82,7 +82,7 @@ def generate_video_shot(shot_number: int, prompt: str) -> Path:
     payload = {
         "model": "veo3.1_fast",
         "promptText": prompt,
-        "duration": 5,
+        "duration": 6,
         "ratio": "1280:720"
     }
 
