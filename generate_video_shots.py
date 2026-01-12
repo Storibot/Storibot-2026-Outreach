@@ -36,6 +36,21 @@ Reverent, artisanal feel. Anamorphic lens flares.""",
 rendered in elegant teal light (#2DD4BF). Particles coalesce around it.
 Clean, futuristic environment with subtle grid lines. Premium tech
 aesthetic. Logo rotates slowly revealing depth.""",
+
+    5: """Abstract visualization of the Hero's Journey narrative structure as a
+luminous 3D pathway. Glowing nodes represent story beats. Camera flies
+through the structure. Teal (#2DD4BF) and white against deep black.
+Data visualization meets cinematic storytelling.""",
+
+    6: """Neural network visualization pulsing with creative energy. Synapses
+fire in teal light. Camera pulls back to reveal the network forms
+the shape of a human brain merged with circuitry. Clean, sophisticated
+look. Subtle particle effects.""",
+
+    7: """Timelapse-style shot: A simple text prompt transforms into a fully
+formed narrative document. Words materialize, organize themselves,
+and polish into professional content. Elegant UI elements. Teal
+highlights on dark interface. Satisfying visual transformation.""",
 }
 
 
