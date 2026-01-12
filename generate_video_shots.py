@@ -51,6 +51,11 @@ look. Subtle particle effects.""",
 formed narrative document. Words materialize, organize themselves,
 and polish into professional content. Elegant UI elements. Teal
 highlights on dark interface. Satisfying visual transformation.""",
+
+    8: """Clean, premium end card composition: Centered robot logo on subtle
+dark gradient. Soft teal glow emanates from logo. Minimal, confident,
+tech-premium aesthetic. Slight camera push-in for energy. Space for
+text overlays.""",
 }
 
 
