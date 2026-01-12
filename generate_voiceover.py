@@ -16,42 +16,19 @@ if not ELEVENLABS_API_KEY:
 VOICE_NAME = "Adam"  # Deep, authoritative voice
 VOICE_ID = "pNInz6obpgDQGcFmaJgB"  # Adam's voice ID
 
-# Audio generation settings
+# Audio generation settings (calm, professional tone)
 VOICE_SETTINGS = {
-    "stability": 0.5,
-    "similarity_boost": 0.75,
-    "style": 0.3,
-    "use_speaker_boost": True
+    "stability": 0.75,
+    "similarity_boost": 0.5,
+    "style": 0.1
 }
 
 # Output configuration
 OUTPUT_DIR = Path("audio/voiceover")
 OUTPUT_FILE = OUTPUT_DIR / "storibot_vo.wav"
 
-# Voiceover script with SSML breaks for pauses
-VOICEOVER_SCRIPT = """
-The AI revolution created infinite content.
-<break time="0.5s"/>
-And infinite noise.
-<break time="1.0s"/>
-But stories? Real stories that move people?
-<break time="0.3s"/>
-Those still take craft.
-<break time="0.8s"/>
-Storibot.ai.
-<break time="0.5s"/>
-Hollywood storytelling frameworks.
-<break time="0.3s"/>
-Powered by AI.
-<break time="0.8s"/>
-Transform any idea into a captivating narrative.
-<break time="0.3s"/>
-In seconds.
-<break time="0.5s"/>
-The future of AI storytelling.
-<break time="0.3s"/>
-Start your free trial today.
-""".strip()
+# Voiceover script
+VOICEOVER_SCRIPT = """The AI revolution created infinite content. And infinite noise. But stories? Real stories that move people? Those still take craft. Storibot dot A I. Hollywood storytelling frameworks. Powered by AI. Transform any idea into a captivating narrative. In seconds. The future of AI storytelling. Start your free trial today."""
 
 
 def generate_voiceover():
