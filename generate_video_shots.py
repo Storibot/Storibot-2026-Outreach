@@ -1,5 +1,5 @@
 """
-Storibot Video Shot Generator using Runway Gen-3 Alpha
+Storibot Video Shot Generator using Runway Gen-4 Turbo
 Generates cinematic video shots from text prompts.
 """
 
@@ -60,7 +60,7 @@ text overlays.""",
 
 
 def generate_video_shot(shot_number: int, prompt: str) -> Path:
-    """Generate a single video shot using Runway Gen-3 Alpha"""
+    """Generate a single video shot using Runway Gen-4 Turbo"""
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_file = OUTPUT_DIR / f"shot_{shot_number:02d}.mp4"
@@ -70,7 +70,7 @@ def generate_video_shot(shot_number: int, prompt: str) -> Path:
     print(f"{'='*60}")
     print(f"Prompt: {prompt[:100]}...")
 
-    # Runway Gen-3 Alpha API endpoint
+    # Runway Gen-4 Turbo API endpoint
     url = "https://api.dev.runwayml.com/v1/text_to_video"
 
     headers = {
@@ -80,7 +80,7 @@ def generate_video_shot(shot_number: int, prompt: str) -> Path:
     }
 
     payload = {
-        "model": "gen3a_turbo",
+        "model": "gen4_turbo",
         "promptText": prompt,
         "duration": 5,
         "ratio": "16:9"
@@ -154,7 +154,7 @@ def generate_video_shot(shot_number: int, prompt: str) -> Path:
 
 def generate_all_shots():
     """Generate all video shots"""
-    print("Storibot Video Shot Generator (Runway Gen-3 Alpha)")
+    print("Storibot Video Shot Generator (Runway Gen-4 Turbo)")
     print(f"Generating {len(SHOT_PROMPTS)} shots...")
 
     generated = []
