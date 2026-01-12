@@ -83,7 +83,7 @@ def generate_video_shot(shot_number: int, prompt: str) -> Path:
         "model": "gen4.5",
         "promptText": prompt,
         "duration": 5,
-        "ratio": "16:9"
+        "ratio": "1280:720"
     }
 
     # Start video generation
