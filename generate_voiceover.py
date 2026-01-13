@@ -18,9 +18,9 @@ VOICE_ID = "pNInz6obpgDQGcFmaJgB"  # Adam's voice ID
 
 # Audio generation settings (calm, professional tone)
 VOICE_SETTINGS = {
-    "stability": 0.75,
-    "similarity_boost": 0.5,
-    "style": 0.1
+    "stability": 0.5,
+    "similarity_boost": 0.75,
+    "style": 0.3
 }
 
 # Output configuration
