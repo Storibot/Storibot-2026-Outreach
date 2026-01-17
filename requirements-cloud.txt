@@ -12,5 +12,8 @@ uvicorn==0.29.0
 pydantic==2.6.4
 python-dotenv==1.0.1
 
-# That's it! Just 5 packages for cloud deployment
-# No Docker, databases, or complex dependencies needed
+# HTTP Client (for ElevenLabs API)
+requests==2.31.0
+
+# Voiceover generation uses ElevenLabs API
+# Set ELEVENLABS_API_KEY environment variable to use
