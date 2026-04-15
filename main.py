@@ -1,25 +1,59 @@
 """
-Storibot Lead Research Agent - Cloud Deployment Version
-Simplified for Replit, PythonAnywhere, Heroku (No Docker Required)
+Storibot 2026 Outreach Platform
+================================
+Multi-agent narrative intelligence system for B2B outreach.
+
+Agent pipeline (in order):
+  1. Story Architecture      — Hollywood narrative framework
+  2. Lead Research           — B2B intelligence + account scoring     [platform functional]
+  3. Narrative Personalization — prospect-specific story angles
+  4. Outreach Generator      — cold emails, LinkedIn, sequences
+  5. Qualification           — MEDDIC + narrative-readiness scoring
+  6. Campaign Orchestration  — end-to-end campaign plans + playbooks  [production capable]
+
+All agents are accessible through the /orchestrate endpoint using the
+JSON dispatch format.  The /pipeline endpoint runs the full chain for
+one company in a single request.
+
+Legacy /research/* endpoints are preserved for backwards compatibility.
 """
+
+import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
-from datetime import datetime
-import os
-import json
-from anthropic import Anthropic
 
-# Initialize FastAPI
-app = FastAPI(
-    title="Storibot Lead Research Agent",
-    description="AI-powered B2B lead research and qualification",
-    version="1.0.0"
+from orchestrator import (
+    DispatchError,
+    DispatchRequest,
+    DispatchResponse,
+    init_orchestrator,
+    get_orchestrator,
 )
 
-# CORS
+# ---------------------------------------------------------------------------
+# App bootstrap
+# ---------------------------------------------------------------------------
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+if not ANTHROPIC_API_KEY:
+    raise ValueError("ANTHROPIC_API_KEY environment variable not set!")
+
+orchestrator = init_orchestrator(ANTHROPIC_API_KEY)
+
+app = FastAPI(
+    title="Storibot 2026 Outreach Platform",
+    description=(
+        "Narrative intelligence multi-agent system for B2B outreach. "
+        "Six agents: Story Architecture, Lead Research, Narrative Personalization, "
+        "Outreach Generator, Qualification, Campaign Orchestration."
+    ),
+    version="2.0.0",
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,257 +62,247 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Claude client
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-if not ANTHROPIC_API_KEY:
-    raise ValueError("ANTHROPIC_API_KEY environment variable not set!")
 
-client = Anthropic(api_key=ANTHROPIC_API_KEY)
+# ---------------------------------------------------------------------------
+# Request / response models (legacy + new)
+# ---------------------------------------------------------------------------
 
-# Pydantic models
+
 class CompanyInput(BaseModel):
     company_name: str
     industry: str
-    employee_count: int
-    website: str
+    employee_count: int = 0
+    website: str = ""
     recent_news: Optional[str] = ""
     tech_stack: Optional[List[str]] = []
 
-class ResearchResponse(BaseModel):
+
+class PipelineRequest(BaseModel):
     company_name: str
     industry: str
-    account_score: str
-    confidence_score: float
-    content_pain_points: List[str]
-    trigger_events: List[str]
-    recommended_angle: str
-    narrative_opportunity: str
-    ai_tools_detected: List[str]
-    research_timestamp: str
-    decision_makers: List[Dict]
-
-# Research prompt from playbook
-RESEARCH_PROMPT_TEMPLATE = """You are a B2B sales research specialist for Storibot.ai, a narrative intelligence platform that transforms AI-generated content into character-driven stories using Hollywood storytelling frameworks.
-
-Your mission: Analyze this company and identify how they struggle with the $47-50 billion content waste crisis.
-
-Company Information:
-- Name: {company_name}
-- Industry: {industry}
-- Employee Count: {employee_count}
-- Website: {website}
-- Recent News: {recent_news}
-- Technology Stack: {tech_stack}
-
-Analyze and provide intelligence in the following areas:
-
-1. CONTENT PAIN POINTS (2-3 specific challenges):
-   - Look for signs they're creating high-volume AI content
-   - Identify authenticity/engagement issues
-   - Detect content waste patterns (unused assets, low engagement)
-
-2. DECISION MAKERS & PRIORITIES:
-   - Who owns content strategy? (CMO, VP Marketing, Content Director)
-   - What are their likely KPIs? (engagement, conversion, brand authenticity)
-   - What keeps them up at night?
-
-3. TRIGGER EVENTS:
-   - Recent funding rounds (expansion = content needs)
-   - Product launches (requires storytelling)
-   - Leadership changes (new CMO = strategy shift)
-   - Hiring patterns (content team growth)
-
-4. NARRATIVE INTELLIGENCE OPPORTUNITY:
-   - How could Hollywood storytelling transform their content?
-   - What character-driven narratives would resonate with their audience?
-   - Specific use cases for their industry
-
-5. RECOMMENDED OUTREACH ANGLE:
-   - Personalized hook based on their situation
-   - Which pain point to lead with
-   - Credibility element from our background
-
-6. ACCOUNT SCORE (A/B/C):
-   - A: Perfect fit (budget signals, active pain, buying window)
-   - B: Good fit (ICP match, pain exists, timing unclear)
-   - C: Acceptable fit (partial match, nurture opportunity)
-
-Provide your analysis in JSON format with this exact structure:
-{{
-    "content_pain_points": ["point1", "point2", "point3"],
-    "decision_makers": [
-        {{"name": "Title", "priorities": ["priority1", "priority2"]}}
-    ],
-    "trigger_events": ["event1", "event2"],
-    "narrative_opportunity": "Specific Hollywood storytelling application",
-    "recommended_angle": "Personalized outreach approach",
-    "account_score": "A/B/C",
-    "reasoning": "Why this score",
-    "ai_tools_detected": ["tool1", "tool2"],
-    "confidence_score": 0.85
-}}
-
-Be specific, actionable, and focused on narrative intelligence differentiation."""
-
-def research_company(company_data: CompanyInput) -> ResearchResponse:
-    """Research a single company using Claude AI"""
-    
-    # Format prompt
-    prompt = RESEARCH_PROMPT_TEMPLATE.format(
-        company_name=company_data.company_name,
-        industry=company_data.industry,
-        employee_count=company_data.employee_count,
-        website=company_data.website,
-        recent_news=company_data.recent_news or "No recent news available",
-        tech_stack=", ".join(company_data.tech_stack) if company_data.tech_stack else "Unknown"
-    )
-    
-    # Call Claude API
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2000,
-        temperature=0.7,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    
-    # Parse response
-    analysis_text = response.content[0].text
-    
-    # Extract JSON
-    try:
-        if "```json" in analysis_text:
-            json_start = analysis_text.find("```json") + 7
-            json_end = analysis_text.find("```", json_start)
-            analysis_text = analysis_text[json_start:json_end].strip()
-        elif "```" in analysis_text:
-            json_start = analysis_text.find("```") + 3
-            json_end = analysis_text.find("```", json_start)
-            analysis_text = analysis_text[json_start:json_end].strip()
-        
-        analysis = json.loads(analysis_text)
-    except json.JSONDecodeError as e:
-        # Fallback if parsing fails
-        analysis = {
-            "content_pain_points": ["Analysis in progress - manual review recommended"],
-            "decision_makers": [],
-            "trigger_events": [],
-            "narrative_opportunity": "Custom analysis required",
-            "recommended_angle": "Direct outreach",
-            "account_score": "B",
-            "reasoning": f"Parser error: {str(e)}",
-            "ai_tools_detected": company_data.tech_stack or [],
-            "confidence_score": 0.5
-        }
-    
-    # Build response
-    return ResearchResponse(
-        company_name=company_data.company_name,
-        industry=company_data.industry,
-        account_score=analysis.get("account_score", "B"),
-        confidence_score=analysis.get("confidence_score", 0.5),
-        content_pain_points=analysis.get("content_pain_points", []),
-        trigger_events=analysis.get("trigger_events", []),
-        recommended_angle=analysis.get("recommended_angle", ""),
-        narrative_opportunity=analysis.get("narrative_opportunity", ""),
-        ai_tools_detected=analysis.get("ai_tools_detected", []),
-        research_timestamp=datetime.utcnow().isoformat(),
-        decision_makers=analysis.get("decision_makers", [])
+    employee_count: int = 0
+    website: str = ""
+    recent_news: Optional[str] = ""
+    tech_stack: Optional[List[str]] = []
+    session_id: Optional[str] = None
+    stop_after: Optional[str] = Field(
+        default=None,
+        description=(
+            "Stop the pipeline after this agent. "
+            "e.g. 'lead_research' for the functional milestone."
+        ),
     )
 
-# API Endpoints
+
+# ---------------------------------------------------------------------------
+# Core endpoints
+# ---------------------------------------------------------------------------
+
+
 @app.get("/")
-def root():
-    """Root endpoint"""
+def root() -> Dict[str, Any]:
+    reg = get_orchestrator().registry
     return {
-        "service": "Storibot Lead Research Agent",
-        "version": "1.0.0",
+        "service": "Storibot 2026 Outreach Platform",
+        "version": "2.0.0",
         "status": "operational",
-        "docs": "/docs"
+        "agents": reg.enabled_agent_ids,
+        "docs": "/docs",
+        "session_count": get_orchestrator().session_store.active_count,
     }
 
+
 @app.get("/health")
-def health_check():
-    """Health check endpoint"""
+def health_check() -> Dict[str, Any]:
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "api_key_configured": bool(ANTHROPIC_API_KEY)
+        "api_key_configured": bool(ANTHROPIC_API_KEY),
+        "active_sessions": get_orchestrator().session_store.active_count,
     }
 
-@app.post("/research/single", response_model=ResearchResponse)
-def research_single_company(company: CompanyInput):
+
+@app.get("/agents")
+def list_agents() -> Dict[str, Any]:
+    """List all registered agents and their available actions."""
+    reg = get_orchestrator().registry
+    return {"agents": reg.list_agents()}
+
+
+@app.get("/agents/{agent_id}/actions")
+def list_actions(agent_id: str) -> Dict[str, Any]:
+    """List all actions for a specific agent."""
+    reg = get_orchestrator().registry
+    actions = reg.list_actions(agent_id)
+    if not actions:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found or disabled")
+    return {"agent_id": agent_id, "actions": actions}
+
+
+@app.get("/sessions/{session_id}")
+def get_session(session_id: str) -> Dict[str, Any]:
+    """Retrieve the current state summary for a session."""
+    session = get_orchestrator().session_store.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found or expired")
+    return session.summary()
+
+
+# ---------------------------------------------------------------------------
+# Orchestrate — primary dispatch endpoint
+# ---------------------------------------------------------------------------
+
+
+@app.post("/orchestrate", response_model=DispatchResponse)
+def orchestrate(request: DispatchRequest) -> DispatchResponse:
     """
-    Research a single company and return intelligence
-    
-    Example:
+    Primary dispatch endpoint.  Routes any (agent_id, action) to the
+    appropriate agent and returns structured results.
+
+    **Dispatch format:**
+    ```json
     {
-        "company_name": "HealthTech Solutions",
-        "industry": "Healthcare",
-        "employee_count": 250,
-        "website": "healthtech.com",
-        "recent_news": "Series A funding",
-        "tech_stack": ["ChatGPT", "Jasper"]
+      "session_id": "optional-uuid",
+      "agent_id":   "story_architecture",
+      "action":     "design_narrative",
+      "payload": {
+        "company_name": "Acme Corp",
+        "industry":     "SaaS"
+      },
+      "metadata": {}
     }
+    ```
+
+    **Available agent_id values:**
+    - `story_architecture` — narrative framework design
+    - `lead_research` — B2B intelligence + account scoring
+    - `narrative_personalization` — prospect-specific story angles
+    - `outreach_generator` — cold emails, LinkedIn, sequences
+    - `qualification` — MEDDIC + narrative-readiness scoring
+    - `campaign_orchestration` — end-to-end campaign plans
+
+    The `suggested_next_agent` field in the response tells you which agent
+    to call next in the recommended pipeline order.
     """
     try:
-        result = research_company(company)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Research failed: {str(e)}")
+        return get_orchestrator().dispatch(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Orchestration failed: {str(exc)}")
+
+
+# ---------------------------------------------------------------------------
+# Pipeline — convenience endpoint for full-chain execution
+# ---------------------------------------------------------------------------
+
+
+@app.post("/pipeline")
+def run_pipeline(request: PipelineRequest) -> Dict[str, Any]:
+    """
+    Run the full 6-agent narrative intelligence pipeline for one company.
+
+    Set `stop_after` to run a partial pipeline:
+    - `"lead_research"` — agents 1 + 2 only (platform functional milestone)
+    - `"outreach_generator"` — agents 1–4 (narrative + content)
+    - omit — all 6 agents (production-capable)
+
+    Sessions are persisted across agents so each agent inherits prior results.
+    Returns the complete output of every agent that ran.
+    """
+    try:
+        payload = request.model_dump(exclude={"session_id", "stop_after"})
+        return get_orchestrator().run_full_pipeline(
+            company_payload=payload,
+            session_id=request.session_id,
+            stop_after=request.stop_after,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Pipeline failed: {str(exc)}")
+
+
+# ---------------------------------------------------------------------------
+# Legacy research endpoints (backwards compatibility)
+# ---------------------------------------------------------------------------
+
+
+@app.post("/research/single")
+def research_single_company(company: CompanyInput) -> Dict[str, Any]:
+    """
+    Legacy endpoint.  Runs Lead Research Agent only.
+    Use /orchestrate with agent_id='lead_research' for full control.
+    """
+    try:
+        response = get_orchestrator().dispatch(
+            DispatchRequest(
+                agent_id="lead_research",
+                action="research_company",
+                payload=company.model_dump(),
+            )
+        )
+        return {
+            "company_name": company.company_name,
+            "industry": company.industry,
+            "session_id": response.session_id,
+            **response.result,
+            "research_timestamp": datetime.utcnow().isoformat(),
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Research failed: {str(exc)}")
+
 
 @app.post("/research/batch")
-def research_batch_companies(companies: List[CompanyInput]):
-    """
-    Research multiple companies in batch
-    
-    Example:
-    [
-        {"company_name": "Company A", "industry": "Healthcare", "employee_count": 200, "website": "a.com"},
-        {"company_name": "Company B", "industry": "Education", "employee_count": 150, "website": "b.com"}
-    ]
-    """
-    results = []
-    for company in companies:
-        try:
-            result = research_company(company)
-            results.append(result)
-        except Exception as e:
-            print(f"Error researching {company.company_name}: {e}")
-            continue
-    
-    return {
-        "total": len(companies),
-        "successful": len(results),
-        "results": results
-    }
+def research_batch_companies(companies: List[CompanyInput]) -> Dict[str, Any]:
+    """Legacy batch endpoint.  Runs Lead Research Agent on each company."""
+    try:
+        response = get_orchestrator().dispatch(
+            DispatchRequest(
+                agent_id="lead_research",
+                action="batch_research",
+                payload={"companies": [c.model_dump() for c in companies]},
+            )
+        )
+        return {
+            "total": len(companies),
+            "session_id": response.session_id,
+            **response.result,
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Batch research failed: {str(exc)}")
+
 
 @app.post("/webhook/research")
-def webhook_research(company: CompanyInput):
-    """
-    Webhook endpoint for Make.com, Zapier, n8n integration
-    
-    Returns simplified response optimized for automation
-    """
+def webhook_research(company: CompanyInput) -> Dict[str, Any]:
+    """Webhook endpoint for Make.com, Zapier, n8n — simplified response."""
     try:
-        result = research_company(company)
-        
+        response = get_orchestrator().dispatch(
+            DispatchRequest(
+                agent_id="lead_research",
+                action="research_company",
+                payload=company.model_dump(),
+            )
+        )
+        r = response.result
         return {
             "success": True,
-            "company": result.company_name,
-            "score": result.account_score,
-            "confidence": result.confidence_score,
-            "pain_points": result.content_pain_points,
-            "recommended_angle": result.recommended_angle,
-            "narrative_opportunity": result.narrative_opportunity,
-            "timestamp": result.research_timestamp
+            "session_id": response.session_id,
+            "company": company.company_name,
+            "score": r.get("account_score"),
+            "confidence": r.get("confidence_score"),
+            "pain_points": r.get("content_pain_points", []),
+            "narrative_opportunity": r.get("narrative_opportunity"),
+            "recommended_angle": r.get("recommended_outreach_angle"),
+            "suggested_next_agent": response.suggested_next_agent,
+            "timestamp": datetime.utcnow().isoformat(),
         }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
 
-# Run with: uvicorn main:app --host 0.0.0.0 --port 8000
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))

@@ -1,16 +1,15 @@
-# Storibot Lead Research Agent - Cloud Deployment Requirements
-# Simplified for Replit, PythonAnywhere, Render, Heroku
+# Storibot 2026 Outreach Platform — Cloud Deployment Requirements
+# Compatible with Replit, PythonAnywhere, Render, Heroku, Fly.io
 
-# Core AI
-anthropic==0.25.0
+# Core AI — Anthropic SDK with tool_use, prompt caching, and managed agents support
+anthropic>=0.50.0
 
-# Web Framework
+# Web framework
 fastapi==0.110.0
 uvicorn==0.29.0
 
-# Data Handling
+# Data validation
 pydantic==2.6.4
 python-dotenv==1.0.1
 
-# That's it! Just 5 packages for cloud deployment
-# No Docker, databases, or complex dependencies needed
+# That's it — 5 packages, no Docker, no database required for cloud deployment
