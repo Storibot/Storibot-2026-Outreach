@@ -2,7 +2,7 @@
 # Simplified for Replit, PythonAnywhere, Render, Heroku
 
 # Core AI
-anthropic==0.25.0
+anthropic>=0.49.0
 
 # Web Framework
 fastapi==0.110.0
